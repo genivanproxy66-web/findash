@@ -23,10 +23,19 @@ export async function middleware(request: NextRequest) {
   const isProtected =
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/api/transactions') ||
-    pathname.startsWith('/api/products');
+    pathname.startsWith('/api/products') ||
+    pathname.startsWith('/api/notes') ||
+    pathname.startsWith('/api/admin');
 
   const isAuthPage =
     pathname.startsWith('/login') || pathname.startsWith('/register');
+
+  // Rotas públicas de notas compartilhadas nunca bloqueiam
+  const isPublicNote =
+    pathname.startsWith('/notas/') ||
+    pathname.startsWith('/api/notes/public/');
+
+  if (isPublicNote) return NextResponse.next();
 
   // Sem token tentando acessar rota protegida → login
   if (!token && isProtected) {

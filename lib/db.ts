@@ -2,7 +2,7 @@ import { neon } from '@neondatabase/serverless';
 
 export const sql = neon(process.env.DATABASE_URL!);
 
-const FIXED_ADMINS = ['ericktorresadm@hotmail.com', 'genivanlimma@gmail.com'];
+export const FIXED_ADMINS = ['ericktorresadm@hotmail.com', 'genivanlimma@gmail.com'];
 
 export async function initDB() {
   await sql`
@@ -16,17 +16,10 @@ export async function initDB() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT FALSE`;
 
-  // Garante coluna active em tabelas já existentes
-  await sql`
-    ALTER TABLE users ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT FALSE
-  `;
-
-  // Admins fixos sempre ativos e com role admin
   for (const email of FIXED_ADMINS) {
-    await sql`
-      UPDATE users SET role = 'admin', active = TRUE WHERE email = ${email}
-    `;
+    await sql`UPDATE users SET role = 'admin', active = TRUE WHERE email = ${email}`;
   }
 
   await sql`
@@ -54,6 +47,17 @@ export async function initDB() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
-}
 
-export { FIXED_ADMINS };
+  await sql`
+    CREATE TABLE IF NOT EXISTS notes (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL DEFAULT 'Sem título',
+      content TEXT NOT NULL DEFAULT '',
+      created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      is_public BOOLEAN NOT NULL DEFAULT FALSE,
+      share_token TEXT UNIQUE NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+}
