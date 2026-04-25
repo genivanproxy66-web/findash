@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'findash-secret-fallback-key-2024'
+  process.env.JWT_SECRET || 'dev-only-insecure-fallback-key'
 );
 
 export async function middleware(request: NextRequest) {

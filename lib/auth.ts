@@ -1,12 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const jwtSecret = process.env.JWT_SECRET;
-if (!jwtSecret && process.env.NODE_ENV === 'production') {
-  throw new Error('JWT_SECRET environment variable is not set');
-}
-const SECRET = new TextEncoder().encode(jwtSecret || 'dev-only-insecure-fallback-key');
-
 const COOKIE = 'findash-token';
 
 export interface SessionUser {
@@ -16,11 +10,22 @@ export interface SessionUser {
   role: string;
 }
 
+function getSecret(): Uint8Array {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('JWT_SECRET environment variable is not set');
+    }
+    return new TextEncoder().encode('dev-only-insecure-fallback-key');
+  }
+  return new TextEncoder().encode(jwtSecret);
+}
+
 export async function createSession(user: SessionUser) {
   const token = await new SignJWT({ ...user })
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime('7d')
-    .sign(SECRET);
+    .sign(getSecret());
 
   (await cookies()).set(COOKIE, token, {
     httpOnly: true,
@@ -35,7 +40,7 @@ export async function getSession(): Promise<SessionUser | null> {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload as unknown as SessionUser;
   } catch {
     return null;
