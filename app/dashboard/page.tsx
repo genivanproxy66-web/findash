@@ -575,246 +575,226 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-      </main>
 
-      {/* NOTES TAB */}
-      {!loading && activeTab === 'notes' && (
-        <div className="animate-fade-in h-full">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-            <div>
-              <h2 className="text-4xl font-black tracking-tight text-white uppercase italic">Anotações</h2>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Bloco de notas pessoal</p>
-            </div>
-            <button onClick={newNote} className="bg-[#10b981] hover:bg-[#059669] text-black font-black uppercase italic px-6 py-2 rounded-lg text-xs transition">
-              + Nova Anotação
-            </button>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-260px)] min-h-[400px]">
-            {/* Lista */}
-            <div className="md:w-64 flex-shrink-0 flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-1">
-              {notes.length === 0 && (
-                <div className="text-center text-gray-600 text-xs font-bold uppercase tracking-widest pt-8">
-                  Nenhuma anotação
-                </div>
-              )}
-              {notes.map((n) => (
-                <button
-                  key={n.id}
-                  onClick={() => openNote(n)}
-                  className={`w-full text-left p-3 rounded-xl border transition ${
-                    activeNote?.id === n.id
-                      ? 'border-[#10b981]/50 bg-[#10b981]/10'
-                      : 'border-white/5 bg-white/5 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-bold text-sm truncate">{n.title || 'Sem título'}</p>
-                    <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded flex-shrink-0 ${
-                      n.is_public ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-700 text-gray-400'
-                    }`}>
-                      {n.is_public ? 'Público' : 'Privado'}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-gray-500 mt-1 truncate">{n.content || 'Vazia'}</p>
-                  <p className="text-[9px] text-gray-600 mt-1">{new Date(n.updated_at).toLocaleDateString('pt-BR')}</p>
-                </button>
-              ))}
+        {/* NOTES TAB */}
+        {!loading && activeTab === 'notes' && (
+          <div className="animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+              <div>
+                <h2 className="text-4xl font-black tracking-tight text-white uppercase italic">Anotações</h2>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Bloco de notas pessoal</p>
+              </div>
+              <button onClick={newNote} className="bg-[#10b981] hover:bg-[#059669] text-black font-black uppercase italic px-6 py-2 rounded-lg text-xs transition self-start sm:self-auto">
+                + Nova Anotação
+              </button>
             </div>
 
-            {/* Editor */}
-            <div className="flex-1 card-glass rounded-xl flex flex-col overflow-hidden border border-white/5">
-              {!activeNote ? (
-                <div className="flex-1 flex items-center justify-center text-gray-600">
-                  <div className="text-center">
-                    <p className="text-4xl mb-3">📝</p>
-                    <p className="text-xs font-bold uppercase tracking-widest">Selecione ou crie uma anotação</p>
+            <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
+              {/* Lista */}
+              <div className="flex flex-col gap-2">
+                {notes.length === 0 && (
+                  <div className="card-glass rounded-xl p-6 text-center text-gray-600 text-xs font-bold uppercase tracking-widest">
+                    Nenhuma anotação
                   </div>
-                </div>
-              ) : (
-                <>
-                  {/* Toolbar */}
-                  <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 flex-wrap">
-                    <button
-                      onClick={saveNote}
-                      disabled={noteSaving}
-                      className="text-[10px] font-black uppercase px-3 py-1.5 rounded bg-[#10b981]/20 text-[#10b981] hover:bg-[#10b981]/30 transition disabled:opacity-50"
-                    >
-                      {noteSaving ? 'Salvando...' : 'Salvar'}
-                    </button>
-
-                    <button
-                      onClick={toggleVisibility}
-                      className={`text-[10px] font-black uppercase px-3 py-1.5 rounded transition ${
-                        activeNote.is_public
-                          ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
-                          : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700'
-                      }`}
-                    >
-                      {activeNote.is_public ? '🔓 Público' : '🔒 Privado'}
-                    </button>
-
-                    {activeNote.is_public && (
-                      <button
-                        onClick={copyShareLink}
-                        className="text-[10px] font-black uppercase px-3 py-1.5 rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition"
-                      >
-                        {noteCopied ? '✓ Copiado!' : '🔗 Copiar Link'}
-                      </button>
-                    )}
-
-                    <div className="flex-1" />
-
-                    <button
-                      onClick={() => deleteNote(activeNote.id)}
-                      className="text-[10px] font-black uppercase px-3 py-1.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
-                    >
-                      Excluir
-                    </button>
-                  </div>
-
-                  {/* Título */}
-                  <input
-                    type="text"
-                    value={noteTitle}
-                    onChange={(e) => setNoteTitle(e.target.value)}
-                    onBlur={saveNote}
-                    placeholder="Título da anotação"
-                    className="w-full px-6 pt-5 pb-2 text-2xl font-black italic bg-transparent border-none outline-none text-white placeholder-gray-700"
-                  />
-
-                  {/* Conteúdo */}
-                  <textarea
-                    value={noteContent}
-                    onChange={(e) => setNoteContent(e.target.value)}
-                    onBlur={saveNote}
-                    placeholder="Escreva sua anotação aqui..."
-                    className="flex-1 w-full px-6 py-3 bg-transparent border-none outline-none text-sm text-gray-300 leading-relaxed resize-none placeholder-gray-700 custom-scrollbar"
-                  />
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* USERS TAB — admin only */}
-      {!loading && activeTab === 'users' && sessionUser?.role === 'admin' && (
-        <div className="animate-fade-in">
-          <div className="mb-6">
-            <h2 className="text-4xl font-black tracking-tight text-white uppercase italic">Usuários</h2>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Gerencie acessos ao painel</p>
-          </div>
-
-          <div className="mb-4 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
-            <p className="text-xs text-yellow-400 font-bold">
-              Novos cadastros chegam como <span className="uppercase">Pendentes</span> e ficam bloqueados até você ativar.
-            </p>
-          </div>
-
-          <div className="card-glass rounded-xl overflow-hidden mb-12">
-            {/* Mobile: cards */}
-            <div className="md:hidden divide-y divide-gray-800">
-              {users.map((u) => {
-                const isFixed = ['ericktorresadm@hotmail.com', 'genivanlimma@gmail.com'].includes(u.email);
-                return (
-                  <div key={u.id} className="p-4 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[#10b981]/20 flex items-center justify-center font-black text-[#10b981] text-sm uppercase flex-shrink-0">
-                        {u.name?.[0] || '?'}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-sm truncate">{u.name}</p>
-                        <p className="text-[10px] text-gray-500 truncate">{u.email}</p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <span className={`status-badge ${u.role === 'admin' ? 'bg-[#10b981]/10 text-[#10b981]' : 'bg-gray-700 text-gray-300'}`}>
-                          {u.role === 'admin' ? 'Admin' : 'User'}
-                        </span>
-                        <span className={`status-badge ${u.active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-yellow-500/10 text-yellow-400'}`}>
-                          {u.active ? 'Ativo' : 'Pendente'}
-                        </span>
-                      </div>
+                )}
+                {notes.map((n) => (
+                  <button
+                    key={n.id}
+                    onClick={() => openNote(n)}
+                    className={`w-full text-left p-3 rounded-xl border transition ${
+                      activeNote?.id === n.id
+                        ? 'border-[#10b981]/50 bg-[#10b981]/10'
+                        : 'border-white/5 bg-[#0f172a] hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <p className="font-bold text-sm truncate">{n.title || 'Sem título'}</p>
+                      <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded flex-shrink-0 ${
+                        n.is_public ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-700 text-gray-400'
+                      }`}>
+                        {n.is_public ? 'Público' : 'Privado'}
+                      </span>
                     </div>
-                    {!isFixed && (
-                      <div className="flex gap-2">
-                        <button onClick={() => updateUser(u.id, { active: !u.active })}
-                          className={`flex-1 text-[10px] font-black uppercase py-1.5 rounded transition ${u.active ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}`}>
-                          {u.active ? 'Desativar' : 'Ativar'}
-                        </button>
-                        <button onClick={() => updateUser(u.id, { role: u.role === 'admin' ? 'user' : 'admin' })}
-                          className="flex-1 text-[10px] font-black uppercase py-1.5 rounded bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition">
-                          {u.role === 'admin' ? '− Admin' : '+ Admin'}
-                        </button>
-                      </div>
-                    )}
-                    {isFixed && <p className="text-[10px] text-gray-600 font-bold uppercase">Admin fixo — não editável</p>}
-                  </div>
-                );
-              })}
-            </div>
+                    <p className="text-[10px] text-gray-500 truncate">{n.content || 'Vazia'}</p>
+                    <p className="text-[9px] text-gray-600 mt-1">{new Date(n.updated_at).toLocaleDateString('pt-BR')}</p>
+                  </button>
+                ))}
+              </div>
 
-            {/* Desktop: tabela */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-black/20">
-                    <th className="px-5 py-4">Usuário</th>
-                    <th className="px-5 py-4">E-mail</th>
-                    <th className="px-5 py-4">Cargo</th>
-                    <th className="px-5 py-4">Status</th>
-                    <th className="px-5 py-4">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => {
-                    const isFixed = ['ericktorresadm@hotmail.com', 'genivanlimma@gmail.com'].includes(u.email);
-                    return (
-                      <tr key={u.id} className="border-b border-gray-800/50 hover:bg-white/5 transition">
-                        <td className="px-5 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-[#10b981]/20 flex items-center justify-center font-black text-[#10b981] text-xs uppercase flex-shrink-0">
-                              {u.name?.[0] || '?'}
-                            </div>
-                            <span className="font-bold text-sm">{u.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-3 text-xs text-gray-400">{u.email}</td>
-                        <td className="px-5 py-3">
+              {/* Editor */}
+              <div className="card-glass rounded-xl flex flex-col border border-white/5 min-h-[500px]">
+                {!activeNote ? (
+                  <div className="flex-1 flex items-center justify-center text-gray-600 py-20">
+                    <div className="text-center">
+                      <p className="text-4xl mb-3">📝</p>
+                      <p className="text-xs font-bold uppercase tracking-widest">Selecione ou crie uma anotação</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 flex-wrap">
+                      <button onClick={saveNote} disabled={noteSaving}
+                        className="text-[10px] font-black uppercase px-3 py-1.5 rounded bg-[#10b981]/20 text-[#10b981] hover:bg-[#10b981]/30 transition disabled:opacity-50">
+                        {noteSaving ? 'Salvando...' : 'Salvar'}
+                      </button>
+                      <button onClick={toggleVisibility}
+                        className={`text-[10px] font-black uppercase px-3 py-1.5 rounded transition ${
+                          activeNote.is_public
+                            ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                            : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700'
+                        }`}>
+                        {activeNote.is_public ? '🔓 Público' : '🔒 Privado'}
+                      </button>
+                      {activeNote.is_public && (
+                        <button onClick={copyShareLink}
+                          className="text-[10px] font-black uppercase px-3 py-1.5 rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition">
+                          {noteCopied ? '✓ Copiado!' : '🔗 Copiar Link'}
+                        </button>
+                      )}
+                      <div className="flex-1" />
+                      <button onClick={() => deleteNote(activeNote.id)}
+                        className="text-[10px] font-black uppercase px-3 py-1.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition">
+                        Excluir
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={noteTitle}
+                      onChange={(e) => setNoteTitle(e.target.value)}
+                      onBlur={saveNote}
+                      placeholder="Título da anotação"
+                      className="w-full px-6 pt-5 pb-2 text-2xl font-black italic bg-transparent border-none outline-none text-white placeholder-gray-700"
+                    />
+                    <textarea
+                      value={noteContent}
+                      onChange={(e) => setNoteContent(e.target.value)}
+                      onBlur={saveNote}
+                      placeholder="Escreva sua anotação aqui..."
+                      className="flex-1 w-full px-6 py-3 bg-transparent border-none outline-none text-sm text-gray-300 leading-relaxed resize-none placeholder-gray-700 custom-scrollbar min-h-[360px]"
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* USERS TAB — admin only */}
+        {!loading && activeTab === 'users' && sessionUser?.role === 'admin' && (
+          <div className="animate-fade-in">
+            <div className="mb-6">
+              <h2 className="text-4xl font-black tracking-tight text-white uppercase italic">Usuários</h2>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Gerencie acessos ao painel</p>
+            </div>
+            <div className="mb-4 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+              <p className="text-xs text-yellow-400 font-bold">
+                Novos cadastros chegam como <span className="uppercase">Pendentes</span> e ficam bloqueados até você ativar.
+              </p>
+            </div>
+            <div className="card-glass rounded-xl overflow-hidden mb-12">
+              {/* Mobile: cards */}
+              <div className="md:hidden divide-y divide-gray-800">
+                {users.map((u) => {
+                  const isFixed = ['ericktorresadm@hotmail.com', 'genivanlimma@gmail.com'].includes(u.email);
+                  return (
+                    <div key={u.id} className="p-4 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-[#10b981]/20 flex items-center justify-center font-black text-[#10b981] text-sm uppercase flex-shrink-0">
+                          {u.name?.[0] || '?'}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-sm truncate">{u.name}</p>
+                          <p className="text-[10px] text-gray-500 truncate">{u.email}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
                           <span className={`status-badge ${u.role === 'admin' ? 'bg-[#10b981]/10 text-[#10b981]' : 'bg-gray-700 text-gray-300'}`}>
-                            {u.role === 'admin' ? 'Admin' : 'Usuário'}
+                            {u.role === 'admin' ? 'Admin' : 'User'}
                           </span>
-                        </td>
-                        <td className="px-5 py-3">
                           <span className={`status-badge ${u.active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-yellow-500/10 text-yellow-400'}`}>
                             {u.active ? 'Ativo' : 'Pendente'}
                           </span>
-                        </td>
-                        <td className="px-5 py-3">
-                          {isFixed ? (
-                            <span className="text-[10px] text-gray-600 font-bold uppercase">Fixo</span>
-                          ) : (
+                        </div>
+                      </div>
+                      {!isFixed ? (
+                        <div className="flex gap-2">
+                          <button onClick={() => updateUser(u.id, { active: !u.active })}
+                            className={`flex-1 text-[10px] font-black uppercase py-1.5 rounded transition ${u.active ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}`}>
+                            {u.active ? 'Desativar' : 'Ativar'}
+                          </button>
+                          <button onClick={() => updateUser(u.id, { role: u.role === 'admin' ? 'user' : 'admin' })}
+                            className="flex-1 text-[10px] font-black uppercase py-1.5 rounded bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition">
+                            {u.role === 'admin' ? '− Admin' : '+ Admin'}
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-gray-600 font-bold uppercase">Admin fixo — não editável</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop: tabela */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-black/20">
+                      <th className="px-5 py-4">Usuário</th>
+                      <th className="px-5 py-4">E-mail</th>
+                      <th className="px-5 py-4">Cargo</th>
+                      <th className="px-5 py-4">Status</th>
+                      <th className="px-5 py-4">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => {
+                      const isFixed = ['ericktorresadm@hotmail.com', 'genivanlimma@gmail.com'].includes(u.email);
+                      return (
+                        <tr key={u.id} className="border-b border-gray-800/50 hover:bg-white/5 transition">
+                          <td className="px-5 py-3">
                             <div className="flex items-center gap-2">
-                              <button onClick={() => updateUser(u.id, { active: !u.active })}
-                                className={`text-[10px] font-black uppercase px-2.5 py-1 rounded transition ${u.active ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}`}>
-                                {u.active ? 'Desativar' : 'Ativar'}
-                              </button>
-                              <button onClick={() => updateUser(u.id, { role: u.role === 'admin' ? 'user' : 'admin' })}
-                                className="text-[10px] font-black uppercase px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition">
-                                {u.role === 'admin' ? '− Admin' : '+ Admin'}
-                              </button>
+                              <div className="w-8 h-8 rounded-lg bg-[#10b981]/20 flex items-center justify-center font-black text-[#10b981] text-xs uppercase flex-shrink-0">
+                                {u.name?.[0] || '?'}
+                              </div>
+                              <span className="font-bold text-sm">{u.name}</span>
                             </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="px-5 py-3 text-xs text-gray-400">{u.email}</td>
+                          <td className="px-5 py-3">
+                            <span className={`status-badge ${u.role === 'admin' ? 'bg-[#10b981]/10 text-[#10b981]' : 'bg-gray-700 text-gray-300'}`}>
+                              {u.role === 'admin' ? 'Admin' : 'Usuário'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3">
+                            <span className={`status-badge ${u.active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-yellow-500/10 text-yellow-400'}`}>
+                              {u.active ? 'Ativo' : 'Pendente'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3">
+                            {isFixed ? (
+                              <span className="text-[10px] text-gray-600 font-bold uppercase">Fixo</span>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => updateUser(u.id, { active: !u.active })}
+                                  className={`text-[10px] font-black uppercase px-2.5 py-1 rounded transition ${u.active ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}`}>
+                                  {u.active ? 'Desativar' : 'Ativar'}
+                                </button>
+                                <button onClick={() => updateUser(u.id, { role: u.role === 'admin' ? 'user' : 'admin' })}
+                                  className="text-[10px] font-black uppercase px-2.5 py-1 rounded bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition">
+                                  {u.role === 'admin' ? '− Admin' : '+ Admin'}
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </main>
 
       {modalOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4">
