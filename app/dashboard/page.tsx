@@ -171,11 +171,28 @@ export default function Dashboard() {
     <div className="min-h-screen flex flex-col md:flex-row">
       <header className="md:hidden flex items-center justify-between p-4 bg-[#0f172a] border-b border-gray-800">
         <div className="text-[#10b981] font-black text-xl italic">FinDash</div>
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white p-2">
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-3">
+          {sessionUser && (
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded bg-[#10b981] flex items-center justify-center font-bold text-black text-xs uppercase">
+                {sessionUser.name?.[0] || 'U'}
+              </div>
+              <span className="text-xs font-bold text-white truncate max-w-[100px]">
+                {sessionUser.name || sessionUser.email}
+              </span>
+              {sessionUser.role === 'admin' && (
+                <span className="text-[9px] font-black uppercase bg-[#10b981]/20 text-[#10b981] px-1.5 py-0.5 rounded">
+                  Admin
+                </span>
+              )}
+            </div>
+          )}
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white p-2">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       {sidebarOpen && (
