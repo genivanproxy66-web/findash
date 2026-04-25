@@ -6,33 +6,40 @@ const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'findash-secret-fallback-key-2024'
 );
 
-const PUBLIC = ['/login', '/register'];
-const AUTH_API = '/api/auth';
+const PROTECTED = ['/dashboard'];
+const AUTH_ONLY = ['/login', '/register'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith(AUTH_API) || pathname.startsWith('/_next') || pathname === '/favicon.ico') {
+  if (pathname.startsWith('/api/auth') || pathname.startsWith('/_next') || pathname === '/favicon.ico') {
     return NextResponse.next();
   }
 
   const token = request.cookies.get('findash-token')?.value;
-  const isPublic = PUBLIC.some((p) => pathname.startsWith(p));
+  const isProtected = PROTECTED.some((p) => pathname.startsWith(p));
+  const isApiData = pathname.startsWith('/api/transactions') || pathname.startsWith('/api/products');
+  const isAuthOnly = AUTH_ONLY.some((p) => pathname.startsWith(p));
 
   if (token) {
     try {
       await jwtVerify(token, SECRET);
-      if (isPublic) return NextResponse.redirect(new URL('/', request.url));
+      if (isAuthOnly) return NextResponse.redirect(new URL('/dashboard', request.url));
       return NextResponse.next();
     } catch {
-      const res = NextResponse.redirect(new URL('/login', request.url));
+      const res = isProtected || isApiData
+        ? NextResponse.redirect(new URL('/login', request.url))
+        : NextResponse.next();
       res.cookies.delete('findash-token');
       return res;
     }
   }
 
-  if (isPublic) return NextResponse.next();
-  return NextResponse.redirect(new URL('/login', request.url));
+  if (isProtected || isApiData) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {

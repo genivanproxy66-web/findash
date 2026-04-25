@@ -1,577 +1,346 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
-interface SessionUser {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-}
+const features = [
+  {
+    icon: '📊',
+    title: 'Controle Financeiro',
+    desc: 'Registre entradas e saídas em tempo real. Visualize saldo, receitas e despesas de forma clara e organizada.',
+  },
+  {
+    icon: '👤',
+    title: 'Gestão de Perfis',
+    desc: 'Controle todos os tipos de perfil vendidos: Comum, Com Doc, Restabelecido, Verificado, BM 260 e Reposição.',
+  },
+  {
+    icon: '📅',
+    title: 'Relatório Mensal',
+    desc: 'Visualize o fluxo consolidado mês a mês. Saiba exatamente quanto entrou, saiu e qual foi o saldo de cada período.',
+  },
+  {
+    icon: '🔐',
+    title: 'Acesso Seguro',
+    desc: 'Sistema de login com senhas criptografadas (bcrypt). Sessão protegida por JWT com validade de 7 dias.',
+  },
+  {
+    icon: '☁️',
+    title: 'Dados na Nuvem',
+    desc: 'Nenhum dado salvo no navegador. Tudo armazenado no Neon PostgreSQL — acesse de qualquer dispositivo.',
+  },
+  {
+    icon: '⚡',
+    title: 'Rápido e Responsivo',
+    desc: 'Interface otimizada para desktop e celular. Carregamento instantâneo com Next.js 15 e Tailwind CSS.',
+  },
+];
 
-interface Transaction {
-  id: number;
-  client: string;
-  value: number;
-  type: string;
-  category: string;
-  timestamp: number;
-}
+const profiles = [
+  { label: 'Perfil Comum', color: 'border-blue-500/40 text-blue-400', bg: 'bg-blue-500/10' },
+  { label: 'Perfil Com Doc', color: 'border-purple-500/40 text-purple-400', bg: 'bg-purple-500/10' },
+  { label: 'Perfil Restabelecido', color: 'border-orange-500/40 text-orange-400', bg: 'bg-orange-500/10' },
+  { label: 'Perfil Verificado', color: 'border-emerald-500/40 text-emerald-400', bg: 'bg-emerald-500/10' },
+  { label: 'BM 260', color: 'border-yellow-500/40 text-yellow-400', bg: 'bg-yellow-500/10' },
+  { label: 'Perfil Reposição', color: 'border-pink-500/40 text-pink-400', bg: 'bg-pink-500/10' },
+];
 
-interface Product {
-  id: number;
-  date: string;
-  comum: number;
-  com_doc: number;
-  rest: number;
-  verif: number;
-  bm: number;
-  repo: number;
-}
+const steps = [
+  { n: '01', title: 'Crie sua conta', desc: 'Registre-se com e-mail e senha. Os dois primeiros usuários recebem acesso de administrador automaticamente.' },
+  { n: '02', title: 'Lance seus dados', desc: 'Registre receitas, despesas e as quantidades de perfis vendidos por dia de forma rápida e intuitiva.' },
+  { n: '03', title: 'Analise seus resultados', desc: 'Acompanhe o saldo, total de vendas e relatório mensal consolidado em tempo real.' },
+];
 
-export default function Home() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
-
-  const fetchData = useCallback(async () => {
-    const [txRes, prRes, meRes] = await Promise.all([
-      fetch('/api/transactions'),
-      fetch('/api/products'),
-      fetch('/api/auth/me'),
-    ]);
-    setTransactions(await txRes.json());
-    setProducts(await prRes.json());
-    if (meRes.ok) setSessionUser(await meRes.json());
-    setLoading(false);
-  }, []);
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
-    router.refresh();
-  };
+export default function LandingPage() {
+  const [isDark, setIsDark] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const saved = localStorage.getItem('findash-theme');
+    if (saved) setIsDark(saved === 'dark');
+  }, []);
 
-  const handleTransactionSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const get = (name: string) => (form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement).value;
-    await fetch('/api/transactions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client: get('clientName'),
-        value: parseFloat(get('saleValue')),
-        type: get('saleType'),
-        category: get('saleCategory'),
-        timestamp: Date.now(),
-      }),
-    });
-    form.reset();
-    fetchData();
-  };
+  useEffect(() => {
+    localStorage.setItem('findash-theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
 
-  const handleProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const getInt = (name: string) =>
-      parseInt((form.elements.namedItem(name) as HTMLInputElement).value) || 0;
-    await fetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        date: (form.elements.namedItem('pDate') as HTMLInputElement).value,
-        comum: getInt('pComum'),
-        com_doc: getInt('pComDoc'),
-        rest: getInt('pRest'),
-        verif: getInt('pVerif'),
-        bm: getInt('pBM'),
-        repo: getInt('pRepo'),
-      }),
-    });
-    form.reset();
-    setModalOpen(false);
-    fetchData();
-  };
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 60);
+    window.addEventListener('scroll', handler);
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
 
-  const deleteTransaction = async (id: number) => {
-    if (!confirm('Excluir?')) return;
-    await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
-    fetchData();
-  };
+  const d = isDark;
 
-  const deleteProduct = async (id: number) => {
-    if (!confirm('Excluir?')) return;
-    await fetch(`/api/products/${id}`, { method: 'DELETE' });
-    fetchData();
-  };
-
-  const clearFinance = async () => {
-    if (!confirm('Limpar histórico?')) return;
-    await Promise.all(transactions.map((tx) => fetch(`/api/transactions/${tx.id}`, { method: 'DELETE' })));
-    fetchData();
-  };
-
-  const switchTab = (tab: string) => {
-    setActiveTab(tab);
-    setSidebarOpen(false);
-  };
-
-  let totalIncome = 0;
-  let totalExpense = 0;
-  transactions.forEach((tx) => {
-    if (tx.type === 'Receita') totalIncome += Number(tx.value);
-    else totalExpense += Number(tx.value);
-  });
-  const balance = totalIncome - totalExpense;
-
-  const monthlyGroups: Record<string, { name: string; inc: number; exp: number }> = {};
-  transactions.forEach((tx) => {
-    const d = new Date(Number(tx.timestamp));
-    const k = `${d.getFullYear()}-${d.getMonth()}`;
-    if (!monthlyGroups[k])
-      monthlyGroups[k] = {
-        name: d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }),
-        inc: 0,
-        exp: 0,
-      };
-    if (tx.type === 'Receita') monthlyGroups[k].inc += Number(tx.value);
-    else monthlyGroups[k].exp += Number(tx.value);
-  });
-
-  const currentDate = new Date()
-    .toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-    .toUpperCase();
-
-  const fmt = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-
-  const navItem = (id: string, label: string, icon: React.ReactNode) => (
-    <div
-      onClick={() => switchTab(id)}
-      className={`sidebar-item flex items-center gap-3 p-3 text-sm font-medium transition ${
-        activeTab === id ? 'sidebar-item-active' : 'text-gray-400'
-      }`}
-    >
-      {icon}
-      {label}
-    </div>
-  );
+  const bg = d ? 'bg-[#0a0e14]' : 'bg-slate-50';
+  const text = d ? 'text-slate-100' : 'text-slate-900';
+  const muted = d ? 'text-slate-400' : 'text-slate-500';
+  const subtle = d ? 'text-slate-600' : 'text-slate-400';
+  const cardBg = d ? 'bg-[#0f172a] border-white/5' : 'bg-white border-slate-200';
+  const cardHover = d ? 'hover:border-emerald-500/30' : 'hover:border-emerald-400';
+  const divider = d ? 'border-white/5' : 'border-slate-200';
+  const navBg = scrolled
+    ? d
+      ? 'bg-[#0a0e14]/80 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50'
+      : 'bg-white/80 backdrop-blur-xl border border-slate-200 shadow-xl shadow-slate-200/50'
+    : 'bg-transparent border border-transparent';
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Mobile Header */}
-      <header className="md:hidden flex items-center justify-between p-4 bg-[#0f172a] border-b border-gray-800">
-        <div className="text-[#10b981] font-black text-xl italic">FinDash</div>
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white p-2">
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-          </svg>
-        </button>
-      </header>
+    <div className={`min-h-screen ${bg} ${text} transition-colors duration-300`}>
 
-      {/* Sidebar overlay for mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* FLOATING NAV */}
+      <nav className={`fixed top-4 left-4 right-4 z-50 rounded-2xl px-4 py-3 transition-all duration-300 ${navBg}`}>
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          {/* Logo */}
+          <a href="#" className="text-xl font-black italic tracking-tighter">
+            <span className={d ? 'text-white' : 'text-slate-900'}>Fin</span>
+            <span className="text-emerald-400">Dash</span>
+          </a>
 
-      {/* Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0a0e14] border-r border-gray-800 transform transition-transform duration-300 md:translate-x-0 md:static md:flex md:flex-col ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="p-6 flex-1">
-          <div className="mb-10">
-            <h1 className="text-2xl font-black italic tracking-tighter flex items-center gap-1">
-              <span className="text-white">Fin</span>
-              <span className="text-[#10b981]">Dash</span>
-            </h1>
-            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Gestão de Perfis</p>
+          {/* Desktop links */}
+          <div className="hidden md:flex items-center gap-6">
+            {['Funcionalidades', 'Perfis', 'Como Funciona'].map((item) => (
+              <a
+                key={item}
+                href={`#${item.toLowerCase().replace(/\s/g, '-').replace('ç', 'c').replace('õ', 'o')}`}
+                className={`text-xs font-bold uppercase tracking-widest transition hover:text-emerald-400 ${muted}`}
+              >
+                {item}
+              </a>
+            ))}
           </div>
 
-          <nav className="space-y-1">
-            <p className="text-[10px] text-gray-600 font-bold uppercase mb-4 tracking-widest">Principal</p>
-
-            {navItem(
-              'dashboard',
-              'Visão Geral',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-            )}
-
-            {navItem(
-              'products',
-              'Produtos',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-            )}
-
-            {navItem(
-              'monthly',
-              'Relatórios',
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            )}
-
-            <p className="text-[10px] text-gray-600 font-bold uppercase mt-8 mb-4 tracking-widest">Armazenamento</p>
-            <div className="px-3 py-2 rounded bg-white/5 border border-white/10">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Neon PostgreSQL</span>
-              </div>
-            </div>
-          </nav>
-        </div>
-
-        <div className="p-6 border-t border-gray-800 space-y-3">
+          {/* Right side */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded bg-[#10b981] flex items-center justify-center font-bold text-black uppercase flex-shrink-0">
-              {sessionUser?.name?.[0] || 'U'}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-bold truncate">{sessionUser?.name || '...'}</p>
-                {sessionUser?.role === 'admin' && (
-                  <span className="text-[9px] font-black uppercase bg-[#10b981]/20 text-[#10b981] px-1.5 py-0.5 rounded flex-shrink-0">
-                    Admin
-                  </span>
-                )}
-              </div>
-              <p className="text-[10px] text-gray-500 truncate">{sessionUser?.email || ''}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="w-full text-[10px] font-bold text-gray-500 hover:text-red-400 uppercase tracking-widest transition py-1.5 border border-gray-800 hover:border-red-500/30 rounded"
-          >
-            Sair
-          </button>
-        </div>
-      </aside>
+            {/* Dark mode toggle */}
+            <button
+              onClick={() => setIsDark(!isDark)}
+              className={`p-2 rounded-xl transition border ${d ? 'border-white/10 hover:bg-white/5' : 'border-slate-200 hover:bg-slate-100'}`}
+              title="Alternar tema"
+            >
+              {isDark ? (
+                <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 text-slate-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                </svg>
+              )}
+            </button>
 
-      {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto max-h-screen custom-scrollbar">
-        {loading && (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-gray-500 font-bold uppercase tracking-widest text-sm animate-pulse">Carregando...</div>
-          </div>
-        )}
+            <Link href="/login" className={`hidden md:block text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl transition border ${d ? 'border-white/10 hover:bg-white/5' : 'border-slate-200 hover:bg-slate-100'} ${muted} hover:text-emerald-400`}>
+              Entrar
+            </Link>
+            <Link href="/register" className="text-xs font-black uppercase italic px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black transition">
+              Começar
+            </Link>
 
-        {/* DASHBOARD TAB */}
-        {!loading && activeTab === 'dashboard' && (
-          <div className="animate-fade-in">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-              <div>
-                <h2 className="text-4xl font-black tracking-tight text-white uppercase italic">Visão Geral</h2>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{currentDate}</p>
-              </div>
-            </div>
-
-            {/* Form */}
-            <section className="card-glass rounded-xl p-6 border-[#10b981]/30 border mb-8">
-              <form
-                onSubmit={handleTransactionSubmit}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end"
-              >
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Descrição</label>
-                  <input
-                    name="clientName"
-                    type="text"
-                    placeholder="Nome/Serviço"
-                    className="w-full px-4 py-2 rounded-lg text-sm focus:outline-none"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Valor (R$)</label>
-                  <input
-                    name="saleValue"
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    className="w-full px-4 py-2 rounded-lg text-sm focus:outline-none"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Tipo</label>
-                  <select name="saleType" className="w-full px-4 py-2 rounded-lg text-sm focus:outline-none">
-                    <option value="Receita">Receita (+)</option>
-                    <option value="Despesa">Despesa (-)</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Categoria</label>
-                  <select name="saleCategory" className="w-full px-4 py-2 rounded-lg text-sm focus:outline-none">
-                    <option value="Serviços">Serviços</option>
-                    <option value="Software">Software</option>
-                    <option value="Hardware">Hardware</option>
-                    <option value="Outros">Outros</option>
-                  </select>
-                </div>
-                <button
-                  type="submit"
-                  className="bg-[#10b981] hover:bg-[#059669] text-black font-black uppercase italic py-2 rounded-lg transition transform active:scale-95"
-                >
-                  Registrar
-                </button>
-              </form>
-            </section>
-
-            {/* Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="card-glass p-5 rounded-xl">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Saldo Atual</p>
-                <h3 className="text-3xl font-black italic">R${fmt(balance)}</h3>
-              </div>
-              <div className="card-glass p-5 rounded-xl border-l-4 border-emerald-500">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Receitas</p>
-                <h3 className="text-3xl font-black italic text-emerald-400">R${fmt(totalIncome)}</h3>
-              </div>
-              <div className="card-glass p-5 rounded-xl border-l-4 border-red-500">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Despesas</p>
-                <h3 className="text-3xl font-black italic text-red-400">R${fmt(totalExpense)}</h3>
-              </div>
-              <div className="card-glass p-5 rounded-xl">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Registros</p>
-                <h3 className="text-3xl font-black italic">{transactions.length}</h3>
-              </div>
-            </div>
-
-            {/* Table */}
-            <section className="card-glass rounded-xl overflow-hidden mb-12">
-              <div className="p-6 border-b border-gray-800 flex justify-between items-center">
-                <h4 className="font-bold text-lg uppercase italic tracking-tight">Histórico Recente</h4>
-                <button onClick={clearFinance} className="text-[10px] font-bold text-red-500 uppercase">
-                  Limpar Tudo
-                </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-black/20">
-                      <th className="px-6 py-4">Descrição</th>
-                      <th className="px-6 py-4">Valor</th>
-                      <th className="px-6 py-4">Tipo</th>
-                      <th className="px-6 py-4">Data</th>
-                      <th className="px-6 py-4">Ação</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactions.map((tx) => {
-                      const isInc = tx.type === 'Receita';
-                      return (
-                        <tr key={tx.id} className="border-b border-gray-800/50 hover:bg-white/5 transition">
-                          <td className="px-6 py-4 font-bold text-sm">{tx.client}</td>
-                          <td className={`px-6 py-4 font-black italic ${isInc ? 'text-emerald-400' : 'text-red-400'}`}>
-                            R${fmt(Number(tx.value))}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              className={`status-badge ${isInc ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}
-                            >
-                              {tx.type}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-[10px] text-gray-500">
-                            {new Date(Number(tx.timestamp)).toLocaleDateString('pt-BR')}
-                          </td>
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => deleteTransaction(tx.id)}
-                              className="text-gray-600 hover:text-red-500 text-lg"
-                            >
-                              ×
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </div>
-        )}
-
-        {/* PRODUCTS TAB */}
-        {!loading && activeTab === 'products' && (
-          <div className="animate-fade-in">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-              <div>
-                <h2 className="text-4xl font-black tracking-tight text-white uppercase italic">Produtos</h2>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">
-                  Modelo de Planilha de Controle
-                </p>
-              </div>
-              <button
-                onClick={() => setModalOpen(true)}
-                className="bg-[#10b981] px-6 py-2 rounded text-black font-black uppercase text-xs italic"
-              >
-                + Lançar Dia
-              </button>
-            </div>
-
-            <div className="card-glass rounded-xl overflow-hidden mb-8">
-              <div className="overflow-x-auto">
-                <table className="w-full sheet-table text-white">
-                  <thead className="bg-black/40">
-                    <tr className="text-[9px] uppercase tracking-tighter">
-                      <th className="bg-gray-800">DATA</th>
-                      <th>P - COMUM</th>
-                      <th>P - COM DOC</th>
-                      <th>P - RESTABELE</th>
-                      <th>P - VERIFICADO</th>
-                      <th>BM 260</th>
-                      <th className="bg-yellow-500/20 text-yellow-400">P - REPOSICAO</th>
-                      <th className="bg-red-500/20 text-red-400">Q. VENDAS</th>
-                      <th>AÇÃO</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map((row) => {
-                      const qVendas =
-                        (row.comum || 0) +
-                        (row.com_doc || 0) +
-                        (row.rest || 0) +
-                        (row.verif || 0) +
-                        (row.bm || 0) +
-                        (row.repo || 0);
-                      return (
-                        <tr key={row.id}>
-                          <td className="bg-gray-800/50 font-bold">
-                            {new Date(row.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
-                          </td>
-                          <td>{row.comum ? row.comum + ' PERFIL' : '-'}</td>
-                          <td>{row.com_doc ? row.com_doc + ' PERFIL' : '-'}</td>
-                          <td>{row.rest ? row.rest + ' PERFIL' : '-'}</td>
-                          <td>{row.verif ? row.verif + ' PERFIL' : '-'}</td>
-                          <td>{row.bm ? row.bm + ' BM' : '-'}</td>
-                          <td>{row.repo ? row.repo + ' PERFIL' : '-'}</td>
-                          <td className="font-bold text-red-400 bg-red-400/5">{qVendas}</td>
-                          <td>
-                            <button
-                              onClick={() => deleteProduct(row.id)}
-                              className="text-gray-700 hover:text-red-500"
-                            >
-                              ×
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* MONTHLY REPORT TAB */}
-        {!loading && activeTab === 'monthly' && (
-          <div className="animate-fade-in">
-            <div className="mb-8">
-              <h2 className="text-4xl font-black tracking-tight text-white uppercase italic">Fluxo Mensal</h2>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Consolidado por mês</p>
-            </div>
-            <div className="grid grid-cols-1 gap-6">
-              {Object.values(monthlyGroups).map((g, i) => {
-                const bal = g.inc - g.exp;
-                return (
-                  <div
-                    key={i}
-                    className="card-glass p-6 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4"
-                  >
-                    <span className="font-black italic uppercase text-lg">{g.name}</span>
-                    <div className="flex gap-8 items-center flex-wrap justify-center">
-                      <div className="text-center">
-                        <p className="text-[9px] text-gray-500 uppercase font-bold">Receitas</p>
-                        <p className="text-emerald-400 font-bold">R$ {fmt(g.inc)}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[9px] text-gray-500 uppercase font-bold">Despesas</p>
-                        <p className="text-red-400 font-bold">R$ {fmt(g.exp)}</p>
-                      </div>
-                      <div className="text-center border-l border-gray-800 pl-8">
-                        <p className="text-[9px] text-gray-500 uppercase font-bold">Saldo</p>
-                        <p className={`font-black ${bal >= 0 ? 'text-white' : 'text-red-500'}`}>R$ {fmt(bal)}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Modal Produto */}
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4">
-          <div className="card-glass p-8 rounded-2xl w-full max-w-lg border border-[#10b981]/50">
-            <h3 className="text-xl font-black uppercase italic mb-6">Lançar Quantidades</h3>
-            <form onSubmit={handleProductSubmit} className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="text-[10px] font-bold text-gray-500 uppercase">Data do Lançamento</label>
-                <input name="pDate" type="date" className="w-full p-2 rounded" required />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase">P - Comum</label>
-                <input name="pComum" type="number" defaultValue="0" className="w-full p-2 rounded" />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase">P - Com Doc</label>
-                <input name="pComDoc" type="number" defaultValue="0" className="w-full p-2 rounded" />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase">P - Restabele</label>
-                <input name="pRest" type="number" defaultValue="0" className="w-full p-2 rounded" />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase">P - Verificado</label>
-                <input name="pVerif" type="number" defaultValue="0" className="w-full p-2 rounded" />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase">BM 260</label>
-                <input name="pBM" type="number" defaultValue="0" className="w-full p-2 rounded" />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase">P - Reposicao</label>
-                <input name="pRepo" type="number" defaultValue="0" className="w-full p-2 rounded" />
-              </div>
-              <div className="col-span-2 flex gap-3 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="flex-1 bg-gray-800 py-2 rounded text-xs font-bold"
-                >
-                  CANCELAR
-                </button>
-                <button type="submit" className="flex-1 bg-[#10b981] py-2 rounded text-black font-black italic">
-                  SALVAR
-                </button>
-              </div>
-            </form>
+            {/* Mobile menu button */}
+            <button onClick={() => setMenuOpen(!menuOpen)} className={`md:hidden p-2 rounded-xl transition ${d ? 'hover:bg-white/5' : 'hover:bg-slate-100'}`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={menuOpen ? 'M6 18L18 6M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'} />
+              </svg>
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div className={`md:hidden mt-3 pt-3 border-t ${divider} flex flex-col gap-3 pb-2`}>
+            {['Funcionalidades', 'Perfis', 'Como Funciona'].map((item) => (
+              <a key={item} href={`#${item.toLowerCase().replace(/\s/g, '-').replace('ç', 'c').replace('õ', 'o')}`}
+                onClick={() => setMenuOpen(false)}
+                className={`text-xs font-bold uppercase tracking-widest px-2 py-1 transition hover:text-emerald-400 ${muted}`}>
+                {item}
+              </a>
+            ))}
+            <Link href="/login" onClick={() => setMenuOpen(false)} className={`text-xs font-bold uppercase tracking-widest px-2 py-1 transition hover:text-emerald-400 ${muted}`}>
+              Entrar
+            </Link>
+          </div>
+        )}
+      </nav>
+
+      {/* HERO */}
+      <section className="relative min-h-screen flex items-center pt-24 pb-20 px-4 overflow-hidden">
+        {/* Background glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-3xl opacity-10 ${d ? 'bg-emerald-500' : 'bg-emerald-400'}`} />
+        </div>
+
+        <div className="max-w-6xl mx-auto w-full relative z-10">
+          <div className="max-w-3xl">
+            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest mb-8 border ${d ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-emerald-500/40 bg-emerald-50 text-emerald-600'}`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Sistema em produção · Neon PostgreSQL
+            </div>
+
+            <h1 className="text-5xl md:text-7xl font-black italic tracking-tighter leading-none mb-6">
+              Controle total
+              <br />
+              <span className="text-emerald-400">dos seus perfis.</span>
+            </h1>
+
+            <p className={`text-lg md:text-xl mb-10 max-w-xl leading-relaxed ${muted}`}>
+              Registre entradas e saídas, acompanhe a venda de perfis por categoria e visualize relatórios mensais — tudo em um painel profissional e seguro.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/register" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase italic text-sm rounded-2xl transition transform hover:scale-105 active:scale-95">
+                Criar conta grátis
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+              <Link href="/login" className={`inline-flex items-center justify-center gap-2 px-8 py-4 font-black uppercase italic text-sm rounded-2xl transition border ${d ? 'border-white/10 hover:bg-white/5' : 'border-slate-300 hover:bg-slate-100'}`}>
+                Já tenho conta
+              </Link>
+            </div>
+          </div>
+
+          {/* Stats row */}
+          <div className={`mt-20 grid grid-cols-2 md:grid-cols-4 gap-4 pt-10 border-t ${divider}`}>
+            {[
+              { value: '6', label: 'Tipos de Perfil' },
+              { value: '100%', label: 'Dados na Nuvem' },
+              { value: 'JWT', label: 'Sessão Segura' },
+              { value: '24/7', label: 'Disponibilidade' },
+            ].map((s) => (
+              <div key={s.label}>
+                <p className="text-3xl font-black italic text-emerald-400">{s.value}</p>
+                <p className={`text-xs font-bold uppercase tracking-widest mt-1 ${muted}`}>{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section id="funcionalidades" className={`py-24 px-4 border-t ${divider}`}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <p className={`text-[10px] font-black uppercase tracking-widest mb-4 text-emerald-400`}>Funcionalidades</p>
+            <h2 className="text-4xl md:text-5xl font-black italic tracking-tight">Tudo que você precisa</h2>
+            <p className={`mt-4 text-base ${muted} max-w-xl mx-auto`}>Uma plataforma completa para organizar o financeiro do seu negócio de perfis.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {features.map((f) => (
+              <div key={f.title} className={`p-6 rounded-2xl border transition-all duration-200 ${cardBg} ${cardHover}`}>
+                <div className="text-3xl mb-4">{f.icon}</div>
+                <h3 className="font-black uppercase italic text-sm mb-2">{f.title}</h3>
+                <p className={`text-sm leading-relaxed ${muted}`}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* PROFILE TYPES */}
+      <section id="perfis" className={`py-24 px-4 border-t ${divider}`}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-[10px] font-black uppercase tracking-widest mb-4 text-emerald-400">Categorias</p>
+            <h2 className="text-4xl md:text-5xl font-black italic tracking-tight">Tipos de perfil suportados</h2>
+            <p className={`mt-4 text-base ${muted} max-w-xl mx-auto`}>Registre e acompanhe cada categoria separadamente para saber exatamente o que está vendendo.</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {profiles.map((p) => (
+              <div key={p.label} className={`flex items-center gap-4 p-5 rounded-2xl border ${p.bg} ${p.color} transition-all hover:scale-105`}>
+                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${p.color.split(' ')[1].replace('text', 'bg')}`} />
+                <span className="font-black uppercase text-xs tracking-widest">{p.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className={`mt-8 p-6 rounded-2xl border ${cardBg} text-center`}>
+            <p className={`text-sm font-bold ${muted}`}>
+              Cada lançamento registra a <span className="text-emerald-400">quantidade vendida por dia</span> e calcula automaticamente o total de vendas.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section id="como-funciona" className={`py-24 px-4 border-t ${divider}`}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-[10px] font-black uppercase tracking-widest mb-4 text-emerald-400">Passo a passo</p>
+            <h2 className="text-4xl md:text-5xl font-black italic tracking-tight">Como funciona</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {steps.map((s) => (
+              <div key={s.n} className="relative">
+                <div className="text-6xl font-black italic text-emerald-500/20 mb-4">{s.n}</div>
+                <h3 className="font-black uppercase italic text-lg mb-3">{s.title}</h3>
+                <p className={`text-sm leading-relaxed ${muted}`}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* TECH / SECURITY */}
+      <section className={`py-24 px-4 border-t ${divider}`}>
+        <div className="max-w-6xl mx-auto">
+          <div className={`rounded-3xl border p-10 md:p-16 ${cardBg} text-center`}>
+            <p className="text-[10px] font-black uppercase tracking-widest mb-4 text-emerald-400">Tecnologia</p>
+            <h2 className="text-3xl md:text-4xl font-black italic tracking-tight mb-4">Seguro e moderno por padrão</h2>
+            <p className={`text-base ${muted} max-w-lg mx-auto mb-12`}>Construído com as melhores tecnologias do mercado para garantir performance e segurança dos seus dados.</p>
+            <div className="flex flex-wrap justify-center gap-4">
+              {[
+                { name: 'Next.js 15', detail: 'App Router' },
+                { name: 'Neon PostgreSQL', detail: 'Serverless' },
+                { name: 'bcrypt', detail: 'Hash de Senha' },
+                { name: 'JWT', detail: 'Auth Segura' },
+                { name: 'Tailwind CSS', detail: 'UI Responsiva' },
+                { name: 'Vercel', detail: 'Deploy em Produção' },
+              ].map((t) => (
+                <div key={t.name} className={`px-5 py-3 rounded-xl border text-left transition ${cardBg} ${cardHover}`}>
+                  <p className="font-black text-sm">{t.name}</p>
+                  <p className={`text-[10px] font-bold uppercase tracking-widest ${subtle}`}>{t.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className={`py-24 px-4 border-t ${divider}`}>
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-5xl md:text-6xl font-black italic tracking-tight mb-6">
+            Comece agora,
+            <br />
+            <span className="text-emerald-400">é grátis.</span>
+          </h2>
+          <p className={`text-lg ${muted} mb-10`}>Crie sua conta em segundos e tenha controle total do seu financeiro de perfis.</p>
+          <Link href="/register" className="inline-flex items-center gap-2 px-10 py-5 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase italic text-base rounded-2xl transition transform hover:scale-105 active:scale-95">
+            Criar conta grátis
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </Link>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className={`py-10 px-4 border-t ${divider}`}>
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <span className="text-xl font-black italic tracking-tighter">
+            <span className={d ? 'text-white' : 'text-slate-900'}>Fin</span>
+            <span className="text-emerald-400">Dash</span>
+          </span>
+          <p className={`text-xs font-bold ${subtle} uppercase tracking-widest`}>
+            © {new Date().getFullYear()} FinDash · Todos os direitos reservados
+          </p>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className={`text-xs font-bold uppercase tracking-widest transition hover:text-emerald-400 ${muted}`}>Entrar</Link>
+            <Link href="/register" className={`text-xs font-bold uppercase tracking-widest transition hover:text-emerald-400 ${muted}`}>Criar Conta</Link>
+          </div>
+        </div>
+      </footer>
+
     </div>
   );
 }
