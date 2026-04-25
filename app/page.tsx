@@ -1,6 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+
+interface SessionUser {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+}
 
 interface Transaction {
   id: number;
@@ -23,22 +31,32 @@ interface Product {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
 
   const fetchData = useCallback(async () => {
-    const [txRes, prRes] = await Promise.all([
+    const [txRes, prRes, meRes] = await Promise.all([
       fetch('/api/transactions'),
       fetch('/api/products'),
+      fetch('/api/auth/me'),
     ]);
     setTransactions(await txRes.json());
     setProducts(await prRes.json());
+    if (meRes.ok) setSessionUser(await meRes.json());
     setLoading(false);
   }, []);
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+    router.refresh();
+  };
 
   useEffect(() => {
     fetchData();
@@ -221,16 +239,29 @@ export default function Home() {
           </nav>
         </div>
 
-        <div className="p-6 border-t border-gray-800">
+        <div className="p-6 border-t border-gray-800 space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded bg-[#10b981] flex items-center justify-center font-bold text-black uppercase">
-              F
+            <div className="w-10 h-10 rounded bg-[#10b981] flex items-center justify-center font-bold text-black uppercase flex-shrink-0">
+              {sessionUser?.name?.[0] || 'U'}
             </div>
-            <div>
-              <p className="text-sm font-bold">Modo Online</p>
-              <p className="text-[10px] text-gray-500">Dados na Nuvem</p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold truncate">{sessionUser?.name || '...'}</p>
+                {sessionUser?.role === 'admin' && (
+                  <span className="text-[9px] font-black uppercase bg-[#10b981]/20 text-[#10b981] px-1.5 py-0.5 rounded flex-shrink-0">
+                    Admin
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-gray-500 truncate">{sessionUser?.email || ''}</p>
             </div>
           </div>
+          <button
+            onClick={handleLogout}
+            className="w-full text-[10px] font-bold text-gray-500 hover:text-red-400 uppercase tracking-widest transition py-1.5 border border-gray-800 hover:border-red-500/30 rounded"
+          >
+            Sair
+          </button>
         </div>
       </aside>
 
