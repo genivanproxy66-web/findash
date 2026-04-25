@@ -30,6 +30,15 @@ interface Product {
   repo: number;
 }
 
+interface UserRow {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  active: boolean;
+  created_at: string;
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -39,6 +48,7 @@ export default function Dashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [users, setUsers] = useState<UserRow[]>([]);
 
   const fetchData = useCallback(async () => {
     const [txRes, prRes, meRes] = await Promise.all([
@@ -48,9 +58,26 @@ export default function Dashboard() {
     ]);
     setTransactions(await txRes.json());
     setProducts(await prRes.json());
-    if (meRes.ok) setSessionUser(await meRes.json());
+    if (meRes.ok) {
+      const me = await meRes.json();
+      setSessionUser(me);
+      if (me?.role === 'admin') {
+        const usersRes = await fetch('/api/admin/users');
+        if (usersRes.ok) setUsers(await usersRes.json());
+      }
+    }
     setLoading(false);
   }, []);
+
+  const updateUser = async (id: number, patch: { active?: boolean; role?: string }) => {
+    await fetch(`/api/admin/users/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+    const usersRes = await fetch('/api/admin/users');
+    if (usersRes.ok) setUsers(await usersRes.json());
+  };
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -230,6 +257,12 @@ export default function Dashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             )}
+            {sessionUser?.role === 'admin' && navItem('users', 'Usuários',
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            )}
+
             <p className="text-[10px] text-gray-600 font-bold uppercase mt-8 mb-4 tracking-widest">Armazenamento</p>
             <div className="px-3 py-2 rounded bg-white/5 border border-white/10">
               <div className="flex items-center gap-2">
@@ -452,6 +485,92 @@ export default function Dashboard() {
           </div>
         )}
       </main>
+
+      {/* USERS TAB — admin only */}
+      {!loading && activeTab === 'users' && sessionUser?.role === 'admin' && (
+        <div className="animate-fade-in">
+          <div className="mb-8">
+            <h2 className="text-4xl font-black tracking-tight text-white uppercase italic">Usuários</h2>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">
+              Gerencie acessos ao painel
+            </p>
+          </div>
+
+          <section className="card-glass rounded-xl overflow-hidden mb-12">
+            <div className="p-6 border-b border-gray-800">
+              <p className="text-xs text-gray-500">
+                Novos cadastros chegam como <span className="text-yellow-400 font-bold">Pendentes</span>.
+                Ative para liberar o acesso ao painel.
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-black/20">
+                    <th className="px-6 py-4">Usuário</th>
+                    <th className="px-6 py-4">E-mail</th>
+                    <th className="px-6 py-4">Cargo</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => {
+                    const isFixed = ['ericktorresadm@hotmail.com', 'genivanlimma@gmail.com'].includes(u.email);
+                    return (
+                      <tr key={u.id} className="border-b border-gray-800/50 hover:bg-white/5 transition">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded bg-[#10b981]/20 flex items-center justify-center font-bold text-[#10b981] text-xs uppercase">
+                              {u.name?.[0] || '?'}
+                            </div>
+                            <span className="font-bold text-sm">{u.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-xs text-gray-400">{u.email}</td>
+                        <td className="px-6 py-4">
+                          <span className={`status-badge ${u.role === 'admin' ? 'bg-[#10b981]/10 text-[#10b981]' : 'bg-gray-700 text-gray-300'}`}>
+                            {u.role === 'admin' ? 'Admin' : 'Usuário'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`status-badge ${u.active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-yellow-500/10 text-yellow-400'}`}>
+                            {u.active ? 'Ativo' : 'Pendente'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {isFixed ? (
+                            <span className="text-[10px] text-gray-600 uppercase font-bold">Admin fixo</span>
+                          ) : (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <button
+                                onClick={() => updateUser(u.id, { active: !u.active })}
+                                className={`text-[10px] font-black uppercase px-3 py-1 rounded transition ${
+                                  u.active
+                                    ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                                    : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                                }`}
+                              >
+                                {u.active ? 'Desativar' : 'Ativar'}
+                              </button>
+                              <button
+                                onClick={() => updateUser(u.id, { role: u.role === 'admin' ? 'user' : 'admin' })}
+                                className="text-[10px] font-black uppercase px-3 py-1 rounded bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition"
+                              >
+                                {u.role === 'admin' ? 'Remover Admin' : 'Tornar Admin'}
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      )}
 
       {modalOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4">

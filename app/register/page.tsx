@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -54,6 +55,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (data.pending) {
+      setPending(true);
+      return;
+    }
+
     router.push('/dashboard');
     router.refresh();
   };
@@ -76,9 +82,15 @@ export default function RegisterPage() {
         <div className="card-glass rounded-2xl p-8 border border-white/10">
           <h2 className="text-xl font-black uppercase italic mb-1">Criar Conta</h2>
           <p className="text-xs text-gray-500 mb-2">
-            Os 2 primeiros cadastros recebem acesso de{' '}
-            <span className="text-[#10b981] font-bold">Admin</span>
+            Novos cadastros ficam <span className="text-yellow-400 font-bold">aguardando aprovação</span> de um administrador.
           </p>
+
+          {pending && (
+            <div className="my-4 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs font-bold px-4 py-4 rounded-lg text-center leading-relaxed">
+              ✓ Cadastro realizado com sucesso!<br />
+              <span className="text-gray-400 font-normal">Aguarde um administrador liberar seu acesso.</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5 mt-6">
             {/* Nome */}

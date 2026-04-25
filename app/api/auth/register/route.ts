@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { sql, initDB } from '@/lib/db';
+import { sql, initDB, FIXED_ADMINS } from '@/lib/db';
 import { createSession } from '@/lib/auth';
 
 export async function POST(req: Request) {
@@ -16,20 +16,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'E-mail já cadastrado.' }, { status: 409 });
   }
 
-  const count = await sql`SELECT COUNT(*) as total FROM users`;
-  const total = Number(count[0].total);
-  const role = total < 2 ? 'admin' : 'user';
+  const isFixedAdmin = FIXED_ADMINS.includes(email.toLowerCase());
+  const role = isFixedAdmin ? 'admin' : 'user';
+  const active = isFixedAdmin;
 
   const password_hash = await bcrypt.hash(password, 12);
 
   const rows = await sql`
-    INSERT INTO users (name, email, password_hash, role)
-    VALUES (${name}, ${email}, ${password_hash}, ${role})
-    RETURNING id, name, email, role
+    INSERT INTO users (name, email, password_hash, role, active)
+    VALUES (${name}, ${email.toLowerCase()}, ${password_hash}, ${role}, ${active})
+    RETURNING id, name, email, role, active
   `;
 
   const user = rows[0];
-  await createSession({ id: user.id, name: user.name, email: user.email, role: user.role });
 
+  if (!user.active) {
+    return NextResponse.json({
+      pending: true,
+      message: 'Cadastro realizado! Aguarde a aprovação de um administrador para acessar o sistema.',
+    });
+  }
+
+  await createSession({ id: user.id, name: user.name, email: user.email, role: user.role });
   return NextResponse.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role } });
 }

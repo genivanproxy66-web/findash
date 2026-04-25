@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(npm install *)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(vercel --version)",
+      "Bash(vercel whoami *)",
+      "Bash(vercel --prod --scope genivanproxy66-webs-projects)",
+      "mcp__a279c205-4ba9-412c-b385-1b62e16eeca4__list_teams",
+      "Bash(vercel logout *)",
+      "Bash(vercel login *)",
+      "Bash(vercel --prod)",
+      "Bash(vercel link *)"
     ]
   }
 }

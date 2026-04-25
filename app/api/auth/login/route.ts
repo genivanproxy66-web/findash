@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Preencha todos os campos.' }, { status: 400 });
   }
 
-  const rows = await sql`SELECT * FROM users WHERE email = ${email}`;
+  const rows = await sql`SELECT * FROM users WHERE email = ${email.toLowerCase()}`;
   const user = rows[0];
 
   if (!user) {
@@ -23,7 +23,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'E-mail ou senha incorretos.' }, { status: 401 });
   }
 
-  await createSession({ id: user.id, name: user.name, email: user.email, role: user.role });
+  if (!user.active) {
+    return NextResponse.json({
+      error: 'Conta aguardando aprovação. Um administrador precisa liberar seu acesso.',
+    }, { status: 403 });
+  }
 
+  await createSession({ id: user.id, name: user.name, email: user.email, role: user.role });
   return NextResponse.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role } });
 }
