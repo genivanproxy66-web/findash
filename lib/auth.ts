@@ -1,9 +1,11 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'findash-secret-fallback-key-2024'
-);
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET environment variable is not set');
+}
+const SECRET = new TextEncoder().encode(jwtSecret || 'dev-only-insecure-fallback-key');
 
 const COOKIE = 'findash-token';
 

@@ -3,6 +3,9 @@ import { sql, initDB } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { randomUUID } from 'crypto';
 
+const MAX_TITLE = 200;
+const MAX_CONTENT = 50_000;
+
 export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
@@ -20,10 +23,14 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
   await initDB();
   const { title, content } = await req.json();
+
+  const safeTitle = (title ?? 'Sem título').toString().slice(0, MAX_TITLE);
+  const safeContent = (content ?? '').toString().slice(0, MAX_CONTENT);
+
   const share_token = randomUUID();
   const rows = await sql`
     INSERT INTO notes (title, content, created_by, share_token)
-    VALUES (${title || 'Sem título'}, ${content || ''}, ${session.id}, ${share_token})
+    VALUES (${safeTitle}, ${safeContent}, ${session.id}, ${share_token})
     RETURNING *
   `;
   return NextResponse.json(rows[0]);
