@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinDash - Painel Financeiro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0e14;
+            color: #e2e8f0;
+            background-image: radial-gradient(#1e293b 0.5px, transparent 0.5px);
+            background-size: 24px 24px;
+        }
+        .card-glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .sidebar-item {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .sidebar-item-active {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1) !important;
+            border-right: 3px solid #10b981;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+        input, select {
+            background: #111827 !important;
+            border: 1px solid #374151 !important;
+            color: white !important;
+        }
+        .status-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .hidden-tab {
+            display: none;
+        }
+        /* Tabela Estilo Planilha */
+        .sheet-table th {
+            font-size: 10px;
+            padding: 8px 4px;
+            border: 1px solid #1e293b;
+            text-align: center;
+        }
+        .sheet-table td {
+            border: 1px solid #1e293b;
+            padding: 4px;
+            font-size: 11px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row">
+
+    <!-- Mobile Header -->
+    <header class="md:hidden flex items-center justify-between p-4 bg-[#0f172a] border-b border-gray-800">
+        <div class="flex items-center gap-2">
+            <div class="text-[#10b981] font-black text-xl italic">FinDash</div>
+        </div>
+        <button id="menuBtn" class="text-white p-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+        </button>
+    </header>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#0a0e14] border-r border-gray-800 transform -translate-x-full transition-transform duration-300 md:translate-x-0 md:static">
+        <div class="p-6">
+            <div class="mb-10">
+                <h1 class="text-2xl font-black italic tracking-tighter flex items-center gap-1">
+                    <span class="text-white">Fin</span><span class="text-[#10b981]">Dash</span>
+                </h1>
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Gestão Local</p>
+            </div>
+
+            <nav class="space-y-1">
+                <p class="text-[10px] text-gray-600 font-bold uppercase mb-4 tracking-widest">Principal</p>
+                
+                <div onclick="switchTab('dashboard')" id="nav-dashboard" class="sidebar-item sidebar-item-active flex items-center gap-3 p-3 text-sm font-medium transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    Visão Geral
+                </div>
+
+                <div onclick="switchTab('products')" id="nav-products" class="sidebar-item flex items-center gap-3 p-3 text-sm font-medium transition text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                    Produtos
+                </div>
+
+                <div onclick="switchTab('monthly')" id="nav-monthly" class="sidebar-item flex items-center gap-3 p-3 text-sm font-medium transition text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    Relatórios
+                </div>
+
+                <p class="text-[10px] text-gray-600 font-bold uppercase mt-8 mb-4 tracking-widest">Armazenamento</p>
+                <div class="px-3 py-2 rounded bg-white/5 border border-white/10">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        <span class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Local Storage</span>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <div class="absolute bottom-0 w-full p-6 border-t border-gray-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded bg-[#10b981] flex items-center justify-center font-bold text-black uppercase">L</div>
+                <div>
+                    <p class="text-sm font-bold">Modo Offline</p>
+                    <p class="text-[10px] text-gray-500">Dados Gravados no Navegador</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto max-h-screen custom-scrollbar">
+        
+        <!-- DASHBOARD TAB -->
+        <div id="tab-dashboard" class="tab-content animate-fade-in">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div>
+                    <h2 class="text-4xl font-black tracking-tight text-white uppercase italic">Visão Geral</h2>
+                    <p id="currentDate" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">---</p>
+                </div>
+            </div>
+
+            <!-- Quick Action Form -->
+            <section class="card-glass rounded-xl p-6 border-[#10b981]/30 border mb-8">
+                <form id="salesForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Descrição</label>
+                        <input type="text" id="clientName" placeholder="Nome/Serviço" class="w-full px-4 py-2 rounded-lg text-sm focus:outline-none" required>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Valor (R$)</label>
+                        <input type="number" step="0.01" id="saleValue" placeholder="0,00" class="w-full px-4 py-2 rounded-lg text-sm focus:outline-none" required>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Tipo</label>
+                        <select id="saleType" class="w-full px-4 py-2 rounded-lg text-sm focus:outline-none">
+                            <option value="Receita">Receita (+)</option>
+                            <option value="Despesa">Despesa (-)</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Categoria</label>
+                        <select id="saleCategory" class="w-full px-4 py-2 rounded-lg text-sm focus:outline-none">
+                            <option value="Serviços">Serviços</option>
+                            <option value="Software">Software</option>
+                            <option value="Hardware">Hardware</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="bg-[#10b981] hover:bg-[#059669] text-black font-black uppercase italic py-2 rounded-lg transition transform active:scale-95">
+                        Registrar
+                    </button>
+                </form>
+            </section>
+
+            <!-- Stat Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="card-glass p-5 rounded-xl">
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Saldo Atual</p>
+                    <h3 id="statTotal" class="text-3xl font-black italic">R$0,00</h3>
+                </div>
+                <div class="card-glass p-5 rounded-xl border-l-4 border-emerald-500">
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Receitas</p>
+                    <h3 id="statIncome" class="text-3xl font-black italic text-emerald-400">R$0,00</h3>
+                </div>
+                <div class="card-glass p-5 rounded-xl border-l-4 border-red-500">
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Despesas</p>
+                    <h3 id="statExpense" class="text-3xl font-black italic text-red-400">R$0,00</h3>
+                </div>
+                <div class="card-glass p-5 rounded-xl">
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Registros</p>
+                    <h3 id="statCount" class="text-3xl font-black italic">0</h3>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <section class="card-glass rounded-xl overflow-hidden mb-12">
+                <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                    <h4 class="font-bold text-lg uppercase italic tracking-tight">Histórico Recente</h4>
+                    <button onclick="clearFinance()" class="text-[10px] font-bold text-red-500 uppercase">Limpar Tudo</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-black/20">
+                                <th class="px-6 py-4">Descrição</th>
+                                <th class="px-6 py-4">Valor</th>
+                                <th class="px-6 py-4">Tipo</th>
+                                <th class="px-6 py-4">Data</th>
+                                <th class="px-6 py-4">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- PRODUCTS TAB -->
+        <div id="tab-products" class="tab-content hidden-tab animate-fade-in">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div>
+                    <h2 class="text-4xl font-black tracking-tight text-white uppercase italic">Produtos</h2>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Modelo de Planilha de Controle</p>
+                </div>
+                <button onclick="openProductModal()" class="bg-[#10b981] px-6 py-2 rounded text-black font-black uppercase text-xs italic">+ Lançar Dia</button>
+            </div>
+
+            <div class="card-glass rounded-xl overflow-hidden mb-8">
+                <div class="overflow-x-auto">
+                    <table class="w-full sheet-table text-white">
+                        <thead class="bg-black/40">
+                            <tr class="text-[9px] uppercase tracking-tighter">
+                                <th class="bg-gray-800">DATA</th>
+                                <th>P - COMUM</th>
+                                <th>P - COM DOC</th>
+                                <th>P - RESTABELE</th>
+                                <th>P - VERIFICADO</th>
+                                <th>BM 260</th>
+                                <th class="bg-yellow-500/20 text-yellow-400">P - REPOSICAO</th>
+                                <th class="bg-red-500/20 text-red-400">Q. VENDAS</th>
+                                <th>AÇÃO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productSheetBody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- MONTHLY REPORT TAB -->
+        <div id="tab-monthly" class="tab-content hidden-tab animate-fade-in">
+            <div class="mb-8">
+                <h2 class="text-4xl font-black tracking-tight text-white uppercase italic">Fluxo Mensal</h2>
+                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Consolidado por mês</p>
+            </div>
+            <div class="grid grid-cols-1 gap-6" id="monthlyReportContainer"></div>
+        </div>
+
+    </main>
+
+    <!-- Modal Produto -->
+    <div id="productModal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-[100] p-4">
+        <div class="card-glass p-8 rounded-2xl w-full max-w-lg border border-[#10b981]/50">
+            <h3 class="text-xl font-black uppercase italic mb-6">Lançar Quantidades</h3>
+            <form id="productForm" class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Data do Lançamento</label>
+                    <input type="date" id="pDate" class="w-full p-2 rounded" required>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">P - Comum</label>
+                    <input type="number" id="pComum" value="0" class="w-full p-2 rounded">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">P - Com Doc</label>
+                    <input type="number" id="pComDoc" value="0" class="w-full p-2 rounded">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">P - Restabele</label>
+                    <input type="number" id="pRest" value="0" class="w-full p-2 rounded">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">P - Verificado</label>
+                    <input type="number" id="pVerif" value="0" class="w-full p-2 rounded">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">BM 260</label>
+                    <input type="number" id="pBM" value="0" class="w-full p-2 rounded">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">P - Reposicao</label>
+                    <input type="number" id="pRepo" value="0" class="w-full p-2 rounded">
+                </div>
+                <div class="col-span-2 flex gap-3 mt-4">
+                    <button type="button" onclick="closeProductModal()" class="flex-1 bg-gray-800 py-2 rounded text-xs font-bold">CANCELAR</button>
+                    <button type="submit" class="flex-1 bg-[#10b981] py-2 rounded text-black font-black italic">SALVAR</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- ESTADO LOCAL ---
+        let financeData = JSON.parse(localStorage.getItem('findash_finance')) || [];
+        let productData = JSON.parse(localStorage.getItem('findash_products')) || [];
+
+        const saveToLocal = () => {
+            localStorage.setItem('findash_finance', JSON.stringify(financeData));
+            localStorage.setItem('findash_products', JSON.stringify(productData));
+            renderAll();
+        };
+
+        // --- NAVEGAÇÃO ---
+        window.switchTab = (tabId) => {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden-tab'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden-tab');
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('sidebar-item-active', 'text-white'));
+            document.getElementById(`nav-${tabId}`).classList.add('sidebar-item-active');
+            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('-translate-x-full');
+        };
+
+        // --- RENDERS ---
+        function renderAll() {
+            renderDashboard();
+            renderProductSheet();
+            renderMonthly();
+        }
+
+        function renderDashboard() {
+            const body = document.getElementById('transactionBody');
+            body.innerHTML = '';
+            let inc = 0, exp = 0;
+
+            financeData.sort((a,b) => b.timestamp - a.timestamp).forEach((tx, idx) => {
+                const isInc = tx.type === 'Receita';
+                if(isInc) inc += tx.value; else exp += tx.value;
+
+                body.innerHTML += `
+                    <tr class="border-b border-gray-800/50 hover:bg-white/5 transition">
+                        <td class="px-6 py-4 font-bold text-sm">${tx.client}</td>
+                        <td class="px-6 py-4 font-black italic ${isInc ? 'text-emerald-400' : 'text-red-400'}">R$${tx.value.toLocaleString('pt-BR')}</td>
+                        <td class="px-6 py-4"><span class="status-badge ${isInc ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}">${tx.type}</span></td>
+                        <td class="px-6 py-4 text-[10px] text-gray-500">${new Date(tx.timestamp).toLocaleDateString('pt-BR')}</td>
+                        <td class="px-6 py-4"><button onclick="deleteFinance(${idx})" class="text-gray-600 hover:text-red-500 text-lg">×</button></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('statTotal').innerText = `R$${(inc - exp).toLocaleString('pt-BR')}`;
+            document.getElementById('statIncome').innerText = `R$${inc.toLocaleString('pt-BR')}`;
+            document.getElementById('statExpense').innerText = `R$${exp.toLocaleString('pt-BR')}`;
+            document.getElementById('statCount').innerText = financeData.length;
+        }
+
+        function renderProductSheet() {
+            const body = document.getElementById('productSheetBody');
+            body.innerHTML = '';
+
+            productData.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach((row, idx) => {
+                const qVendas = (row.comum || 0) + (row.comDoc || 0) + (row.rest || 0) + (row.verif || 0) + (row.bm || 0) + (row.repo || 0);
+
+                body.innerHTML += `
+                    <tr>
+                        <td class="bg-gray-800/50 font-bold">${new Date(row.date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>
+                        <td>${row.comum ? row.comum + ' PERFIL' : '-'}</td>
+                        <td>${row.comDoc ? row.comDoc + ' PERFIL' : '-'}</td>
+                        <td>${row.rest ? row.rest + ' PERFIL' : '-'}</td>
+                        <td>${row.verif ? row.verif + ' PERFIL' : '-'}</td>
+                        <td>${row.bm ? row.bm + ' BM' : '-'}</td>
+                        <td>${row.repo ? row.repo + ' PERFIL' : '-'}</td>
+                        <td class="font-bold text-red-400 bg-red-400/5">${qVendas}</td>
+                        <td><button onclick="deleteProduct(${idx})" class="text-gray-700 hover:text-red-500">×</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderMonthly() {
+            const container = document.getElementById('monthlyReportContainer');
+            container.innerHTML = '';
+            const groups = {};
+
+            financeData.forEach(tx => {
+                const d = new Date(tx.timestamp);
+                const k = `${d.getFullYear()}-${d.getMonth()}`;
+                if(!groups[k]) groups[k] = { name: d.toLocaleString('pt-BR', {month:'long', year:'numeric'}), inc:0, exp:0 };
+                if(tx.type === 'Receita') groups[k].inc += tx.value; else groups[k].exp += tx.value;
+            });
+
+            Object.values(groups).forEach(g => {
+                const balance = g.inc - g.exp;
+                container.innerHTML += `
+                    <div class="card-glass p-6 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4">
+                        <span class="font-black italic uppercase text-lg">${g.name}</span>
+                        <div class="flex gap-8 items-center">
+                            <div class="text-center">
+                                <p class="text-[9px] text-gray-500 uppercase font-bold">Receitas</p>
+                                <p class="text-emerald-400 font-bold">R$ ${g.inc.toLocaleString('pt-BR')}</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[9px] text-gray-500 uppercase font-bold">Despesas</p>
+                                <p class="text-red-400 font-bold">R$ ${g.exp.toLocaleString('pt-BR')}</p>
+                            </div>
+                            <div class="text-center border-l border-gray-800 pl-8">
+                                <p class="text-[9px] text-gray-500 uppercase font-bold">Saldo</p>
+                                <p class="font-black ${balance >= 0 ? 'text-white' : 'text-red-500'}">R$ ${balance.toLocaleString('pt-BR')}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- AÇÕES ---
+        document.getElementById('salesForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            financeData.push({
+                client: document.getElementById('clientName').value,
+                value: parseFloat(document.getElementById('saleValue').value),
+                type: document.getElementById('saleType').value,
+                category: document.getElementById('saleCategory').value,
+                timestamp: Date.now()
+            });
+            e.target.reset();
+            saveToLocal();
+        });
+
+        document.getElementById('productForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            productData.push({
+                date: document.getElementById('pDate').value,
+                comum: parseInt(document.getElementById('pComum').value) || 0,
+                comDoc: parseInt(document.getElementById('pComDoc').value) || 0,
+                rest: parseInt(document.getElementById('pRest').value) || 0,
+                verif: parseInt(document.getElementById('pVerif').value) || 0,
+                bm: parseInt(document.getElementById('pBM').value) || 0,
+                repo: parseInt(document.getElementById('pRepo').value) || 0
+            });
+            closeProductModal();
+            e.target.reset();
+            saveToLocal();
+        });
+
+        window.deleteFinance = (idx) => { if(confirm('Excluir?')) { financeData.splice(idx, 1); saveToLocal(); } };
+        window.deleteProduct = (idx) => { if(confirm('Excluir?')) { productData.splice(idx, 1); saveToLocal(); } };
+        window.clearFinance = () => { if(confirm('Limpar histórico?')) { financeData = []; saveToLocal(); } };
+
+        // --- UI ---
+        window.openProductModal = () => document.getElementById('productModal').classList.remove('hidden');
+        window.closeProductModal = () => document.getElementById('productModal').classList.add('hidden');
+        document.getElementById('menuBtn').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
+        document.getElementById('currentDate').innerText = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long', year:'numeric'}).toUpperCase();
+
+        // Start
+        renderAll();
+    </script>
+</body>
+</html>
