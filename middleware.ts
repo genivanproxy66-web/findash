@@ -6,36 +6,54 @@ const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'findash-secret-fallback-key-2024'
 );
 
-const PROTECTED = ['/dashboard'];
-const AUTH_ONLY = ['/login', '/register'];
+// Só o dashboard e APIs de dados precisam de login
+const PROTECTED = ['/dashboard', '/api/transactions', '/api/products'];
+
+// Rotas que usuário logado não deve acessar (vai pro dashboard)
+const AUTH_PAGES = ['/login', '/register'];
+
+// Landing page: qualquer um acessa, mas logado vai pro dashboard
+const LANDING = ['/'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith('/api/auth') || pathname.startsWith('/_next') || pathname === '/favicon.ico') {
+  // Deixa _next, favicon e rotas de auth da API passarem livres
+  if (
+    pathname.startsWith('/_next') ||
+    pathname === '/favicon.ico' ||
+    pathname.startsWith('/api/auth')
+  ) {
     return NextResponse.next();
   }
 
   const token = request.cookies.get('findash-token')?.value;
   const isProtected = PROTECTED.some((p) => pathname.startsWith(p));
-  const isApiData = pathname.startsWith('/api/transactions') || pathname.startsWith('/api/products');
-  const isAuthOnly = AUTH_ONLY.some((p) => pathname.startsWith(p));
+  const isAuthPage = AUTH_PAGES.some((p) => pathname.startsWith(p));
+  const isLanding = LANDING.includes(pathname);
 
   if (token) {
     try {
       await jwtVerify(token, SECRET);
-      if (isAuthOnly) return NextResponse.redirect(new URL('/dashboard', request.url));
+      // Logado tentando acessar login, register ou landing → vai pro dashboard
+      if (isAuthPage || isLanding) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
       return NextResponse.next();
     } catch {
-      const res = isProtected || isApiData
+      // Token inválido/expirado
+      const response = isProtected
         ? NextResponse.redirect(new URL('/login', request.url))
+        : isLanding
+        ? NextResponse.next()
         : NextResponse.next();
-      res.cookies.delete('findash-token');
-      return res;
+      response.cookies.delete('findash-token');
+      return response;
     }
   }
 
-  if (isProtected || isApiData) {
+  // Sem login tentando acessar rota protegida → vai pro login
+  if (isProtected) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
