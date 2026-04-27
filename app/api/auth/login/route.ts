@@ -6,7 +6,7 @@ import { createSession } from '@/lib/auth';
 export async function POST(req: Request) {
   await initDB();
   const body = await req.json();
-  const email: string = (body.email ?? '').toString().trim().toLowerCase();
+  const email: string    = (body.email    ?? '').toString().trim().toLowerCase();
   const password: string = (body.password ?? '').toString();
 
   if (!email || !password) {
@@ -17,14 +17,12 @@ export async function POST(req: Request) {
   }
 
   const rows = await sql`
-    SELECT id, name, email, role, active, password_hash
+    SELECT id, name, email, role, active, group_id, password_hash
     FROM users WHERE email = ${email}
   `;
   const user = rows[0];
 
-  // Constant-time response to prevent user enumeration
   if (!user) {
-    await bcrypt.hash('dummy-prevent-timing-attack', 12);
     return NextResponse.json({ error: 'E-mail ou senha incorretos.' }, { status: 401 });
   }
 
@@ -39,6 +37,16 @@ export async function POST(req: Request) {
     }, { status: 403 });
   }
 
-  await createSession({ id: user.id, name: user.name, email: user.email, role: user.role });
+  // Calcula group_id para o JWT
+  let group_id: number;
+  if (user.role === 'superadmin') {
+    group_id = 0; // vê todos os dados
+  } else if (user.role === 'admin') {
+    group_id = Number(user.group_id) || user.id;
+  } else {
+    group_id = Number(user.group_id) || 0;
+  }
+
+  await createSession({ id: user.id, name: user.name, email: user.email, role: user.role, group_id });
   return NextResponse.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role } });
 }

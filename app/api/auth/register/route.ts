@@ -7,10 +7,10 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: Request) {
   await initDB();
-  const body = await req.json();
-  const name: string = (body.name ?? '').toString().trim();
-  const email: string = (body.email ?? '').toString().trim().toLowerCase();
-  const password: string = (body.password ?? '').toString();
+  const body     = await req.json();
+  const name     = (body.name     ?? '').toString().trim();
+  const email    = (body.email    ?? '').toString().trim().toLowerCase();
+  const password = (body.password ?? '').toString();
 
   if (!name || !email || !password) {
     return NextResponse.json({ error: 'Preencha todos os campos.' }, { status: 400 });
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
   }
 
   const isFixedAdmin = FIXED_ADMINS.includes(email);
-  const role = isFixedAdmin ? 'admin' : 'user';
+  const role   = isFixedAdmin ? 'admin' : 'user';
   const active = isFixedAdmin;
 
   const password_hash = await bcrypt.hash(password, 12);
@@ -44,7 +44,6 @@ export async function POST(req: Request) {
     VALUES (${name}, ${email}, ${password_hash}, ${role}, ${active})
     RETURNING id, name, email, role, active
   `;
-
   const user = rows[0];
 
   if (!user.active) {
@@ -54,6 +53,15 @@ export async function POST(req: Request) {
     });
   }
 
-  await createSession({ id: user.id, name: user.name, email: user.email, role: user.role });
+  // Admins fixos: group_id = o próprio id
+  await sql`UPDATE users SET group_id = ${user.id} WHERE id = ${user.id}`;
+
+  await createSession({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    group_id: user.id,
+  });
   return NextResponse.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role } });
 }

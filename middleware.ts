@@ -9,11 +9,21 @@ const SECRET = new TextEncoder().encode(
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Passa livre: _next, favicon e API de auth
+  // Passa livre: assets e API de auth
   if (
     pathname.startsWith('/_next') ||
     pathname === '/favicon.ico' ||
     pathname.startsWith('/api/auth')
+  ) {
+    return NextResponse.next();
+  }
+
+  // Rotas públicas: notas compartilhadas e perfis compartilhados
+  if (
+    pathname.startsWith('/notas/') ||
+    pathname.startsWith('/perfis/') ||
+    pathname.startsWith('/api/notes/public/') ||
+    pathname.startsWith('/api/profiles/access/')
   ) {
     return NextResponse.next();
   }
@@ -25,17 +35,12 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/transactions') ||
     pathname.startsWith('/api/products') ||
     pathname.startsWith('/api/notes') ||
-    pathname.startsWith('/api/admin');
+    pathname.startsWith('/api/admin') ||
+    pathname.startsWith('/api/profiles') ||
+    pathname.startsWith('/api/db');
 
   const isAuthPage =
     pathname.startsWith('/login') || pathname.startsWith('/register');
-
-  // Rotas públicas de notas compartilhadas nunca bloqueiam
-  const isPublicNote =
-    pathname.startsWith('/notas/') ||
-    pathname.startsWith('/api/notes/public/');
-
-  if (isPublicNote) return NextResponse.next();
 
   // Sem token tentando acessar rota protegida → login
   if (!token && isProtected) {
@@ -50,7 +55,6 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
     } catch {
-      // Token inválido → limpa cookie e redireciona se necessário
       const response = isProtected
         ? NextResponse.redirect(new URL('/login', request.url))
         : NextResponse.next();

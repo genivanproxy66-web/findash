@@ -7,7 +7,8 @@ export interface SessionUser {
   id: number;
   name: string;
   email: string;
-  role: string;
+  role: string;       // 'user' | 'admin' | 'superadmin'
+  group_id: number;   // 0 = superadmin (vê tudo); admin = seu próprio id; user = id do admin que aprovou
 }
 
 function getSecret(): Uint8Array {

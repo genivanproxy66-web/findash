@@ -10,7 +10,13 @@
       "Bash(vercel logout *)",
       "Bash(vercel login *)",
       "Bash(vercel --prod)",
-      "Bash(vercel link *)"
+      "Bash(vercel link *)",
+      "Bash(vercel env *)",
+      "Bash(mkdir -p \"/c/Users/Erick/Downloads/black perfis/app/api/profiles/access\")",
+      "Bash(mkdir -p \"/c/Users/Erick/Downloads/black perfis/app/api/profiles/access/[token]\")",
+      "Bash(mkdir -p \"/c/Users/Erick/Downloads/black perfis/app/api/profiles/[id]\")",
+      "Bash(mkdir -p \"/c/Users/Erick/Downloads/black perfis/app/api/db\")",
+      "Bash(mkdir -p \"/c/Users/Erick/Downloads/black perfis/app/perfis/[token]\")"
     ]
   }
 }

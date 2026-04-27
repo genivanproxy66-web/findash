@@ -35,8 +35,8 @@ export default function RegisterPage() {
       setError('As senhas não coincidem.');
       return;
     }
-    if (password.length < 6) {
-      setError('A senha deve ter no mínimo 6 caracteres.');
+    if (password.length < 8) {
+      setError('A senha deve ter no mínimo 8 caracteres.');
       return;
     }
 
@@ -133,7 +133,7 @@ export default function RegisterPage() {
                   type={showPass ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                   className="w-full px-4 py-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#10b981]/50 pr-12"
                   required
                 />
