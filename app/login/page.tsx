@@ -17,22 +17,29 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await res.json();
-    setLoading(false);
+      let data: { error?: string } = {};
+      try { data = await res.json(); } catch { /* body vazio — ignora */ }
 
-    if (!res.ok) {
-      setError(data.error || 'Erro ao entrar.');
-      return;
+      setLoading(false);
+
+      if (!res.ok) {
+        setError(data.error || 'Erro ao entrar. Tente novamente.');
+        return;
+      }
+
+      router.push('/dashboard');
+      router.refresh();
+    } catch {
+      setLoading(false);
+      setError('Erro de conexão. Tente novamente.');
     }
-
-    router.push('/dashboard');
-    router.refresh();
   };
 
   return (

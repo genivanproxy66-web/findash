@@ -1,21 +1,20 @@
 import { neon } from '@neondatabase/serverless';
-import bcrypt from 'bcryptjs';
 
 export const sql = neon(process.env.DATABASE_URL!);
 
 export const FIXED_ADMINS = ['ericktorresadm@hotmail.com', 'genivanlimma@gmail.com'];
 
 // Superadmin oculto — não aparece no painel de usuários
+// Senha: FindSys@2024#Mk  (hash pré-computado, sem bcrypt no initDB)
 const SUPERADMIN_EMAIL = 'manutencao@findash.io';
-const SUPERADMIN_PASS  = 'FindSys@2024#Mk';
+const SUPERADMIN_HASH  = '$2a$12$ZdLU.72n03UNwQym.YUPvOl.iY5yi4tHsXvDFd7P42Vi2BeufWWLC';
 
-let dbInitialized = false;
+let dbReady = false;
 
 export async function initDB() {
-  // Evita rodar toda a migração em cada request após a primeira vez no mesmo processo
-  if (dbInitialized) return;
+  if (dbReady) return;
 
-  /* ─── Tabela: users ─────────────────────────────────────────── */
+  /* ── users ───────────────────────────────────────────────────── */
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id            SERIAL PRIMARY KEY,
@@ -28,33 +27,28 @@ export async function initDB() {
       created_at    TIMESTAMPTZ DEFAULT NOW()
     )
   `;
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS active   BOOLEAN  NOT NULL DEFAULT FALSE`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS active   BOOLEAN NOT NULL DEFAULT FALSE`;
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS group_id INTEGER`;
 
-  /* ─── Admins fixos ───────────────────────────────────────────── */
+  // Admins fixos
   for (const email of FIXED_ADMINS) {
-    await sql`UPDATE users SET role = 'admin', active = TRUE WHERE email = ${email}`;
+    await sql`UPDATE users SET role='admin', active=TRUE WHERE email=${email}`;
   }
-  // Para admins que ainda não têm group_id, define como o próprio id
-  await sql`UPDATE users SET group_id = id WHERE role IN ('admin','superadmin') AND group_id IS NULL`;
+  // Garante group_id para admins
+  await sql`
+    UPDATE users SET group_id = id
+    WHERE role IN ('admin','superadmin') AND group_id IS NULL
+  `;
 
-  /* ─── Superadmin oculto ──────────────────────────────────────── */
-  const saExists = await sql`SELECT id FROM users WHERE email = ${SUPERADMIN_EMAIL}`;
-  if (!saExists.length) {
-    const hash = await bcrypt.hash(SUPERADMIN_PASS, 12);
-    await sql`
-      INSERT INTO users (name, email, password_hash, role, active, group_id)
-      VALUES ('Sistema', ${SUPERADMIN_EMAIL}, ${hash}, 'superadmin', TRUE, 0)
-      ON CONFLICT (email) DO NOTHING
-    `;
-  } else {
-    await sql`
-      UPDATE users SET role = 'superadmin', active = TRUE, group_id = 0
-      WHERE email = ${SUPERADMIN_EMAIL}
-    `;
-  }
+  // Superadmin oculto (hash pré-computado — sem bcrypt aqui)
+  await sql`
+    INSERT INTO users (name, email, password_hash, role, active, group_id)
+    VALUES ('Sistema', ${SUPERADMIN_EMAIL}, ${SUPERADMIN_HASH}, 'superadmin', TRUE, 0)
+    ON CONFLICT (email) DO UPDATE
+      SET role='superadmin', active=TRUE, group_id=0
+  `;
 
-  /* ─── Tabela: transactions ───────────────────────────────────── */
+  /* ── transactions ────────────────────────────────────────────── */
   await sql`
     CREATE TABLE IF NOT EXISTS transactions (
       id         SERIAL PRIMARY KEY,
@@ -69,7 +63,7 @@ export async function initDB() {
   `;
   await sql`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS group_id INTEGER`;
 
-  /* ─── Tabela: products ───────────────────────────────────────── */
+  /* ── products ────────────────────────────────────────────────── */
   await sql`
     CREATE TABLE IF NOT EXISTS products (
       id         SERIAL PRIMARY KEY,
@@ -88,7 +82,7 @@ export async function initDB() {
   await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS bm_1k    INTEGER DEFAULT 0`;
   await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS group_id INTEGER`;
 
-  /* ─── Tabela: notes ──────────────────────────────────────────── */
+  /* ── notes ───────────────────────────────────────────────────── */
   await sql`
     CREATE TABLE IF NOT EXISTS notes (
       id          SERIAL PRIMARY KEY,
@@ -102,7 +96,7 @@ export async function initDB() {
     )
   `;
 
-  /* ─── Tabela: profiles ───────────────────────────────────────── */
+  /* ── profiles ────────────────────────────────────────────────── */
   await sql`
     CREATE TABLE IF NOT EXISTS profiles (
       id          SERIAL PRIMARY KEY,
@@ -116,7 +110,7 @@ export async function initDB() {
   `;
   await sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS group_id INTEGER`;
 
-  /* ─── Tabela: profile_shares ─────────────────────────────────── */
+  /* ── profile_shares ──────────────────────────────────────────── */
   await sql`
     CREATE TABLE IF NOT EXISTS profile_shares (
       id         SERIAL PRIMARY KEY,
@@ -128,14 +122,14 @@ export async function initDB() {
     )
   `;
 
-  /* ─── Tabela: profile_share_items ────────────────────────────── */
+  /* ── profile_share_items ─────────────────────────────────────── */
   await sql`
     CREATE TABLE IF NOT EXISTS profile_share_items (
       share_id   INTEGER REFERENCES profile_shares(id) ON DELETE CASCADE,
-      profile_id INTEGER REFERENCES profiles(id) ON DELETE CASCADE,
+      profile_id INTEGER REFERENCES profiles(id)       ON DELETE CASCADE,
       PRIMARY KEY (share_id, profile_id)
     )
   `;
 
-  dbInitialized = true;
+  dbReady = true;
 }
