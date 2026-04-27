@@ -2,7 +2,7 @@ import { neon } from '@neondatabase/serverless';
 
 export const sql = neon(process.env.DATABASE_URL!);
 
-export const FIXED_ADMINS = ['ericktorresadm@hotmail.com', 'genivanlimma@gmail.com'];
+export const FIXED_ADMINS = ['genivanlimma@gmail.com'];
 
 // Superadmin oculto — não aparece no painel de usuários
 // Senha: FindSys@2024#Mk  (hash pré-computado, sem bcrypt no initDB)
